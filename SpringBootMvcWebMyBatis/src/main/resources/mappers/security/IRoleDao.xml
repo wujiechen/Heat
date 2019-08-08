@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neusoft.busmis.security.dao.IRoleDao">
+	<cache/>
+	<resultMap id="RoleResultMap" type="Role">
+		<id property="rno" column="RNO"/>
+		<result property="rname" column="RName"/>
+	</resultMap>
+	
+	<!-- 使用内嵌式Select实现方式的关联属性User的结果映射 -->
+ 	<resultMap id="RoleResultMapWithUsersByNestedSelect" type="Role" extends="RoleResultMap">
+ 		<collection property="users" column="RNO" select="com.neusoft.busmis.security.dao.IUserDao.selectListByRole"/>
+ 	</resultMap>
+ 	
+ 	<!-- 内嵌式resultmap -->
+ 	<resultMap id="RoleResultMapWithUsersByNestedResultMap" type="Role" extends="RoleResultMap">
+ 		<collection property="users" resultMap="com.neusoft.busmis.security.dao.IUserDao.UserResultMap"/>
+ 	</resultMap>
+	
+	<!-- 使用内嵌式Select实现方式的关联属性Module的结果映射 -->
+  	<resultMap id="RoleResultMapWithModulesByNestedSelect" type="Role" extends="RoleResultMap" >
+  		<collection property="modules" column="RNO" select="com.neusoft.busmis.security.dao.IModuleDao.selectListByRole"></collection>
+ 	 </resultMap>
+  
+ 	 <!-- 使用内嵌式ResultMap实现方式的关联属性的结果映射 -->
+   	<resultMap id="RoleResultMapWithModulesByNestedResultMap" type="Role" extends="RoleResultMap" >
+  		<collection property="modules" resultMap="com.neusoft.busmis.security.dao.IModuleDao.ModuleResultMap"></collection>
+  	</resultMap>
+	
+	
+
+  <!-- 不推荐使用paramType,映射能够自动获取参数。同时方法中有多个参数时不可使用 -->
+  <!-- 主键自增 keyProperty="rno" keyColumn="RNO" useGeneratedKeys="true" -->
+  <insert id="create" keyProperty="rno" keyColumn="RNO" useGeneratedKeys="true" flushCache="true">
+  	 insert into Roles values #{rname}) 
+  </insert>
+  <!-- Oracle没有自增量，需要使用以下方法实现 
+  <insert id="create" ketProperty="no" keyColumn="RNO" useGeneratedKeys="true" flushCache="true">
+  	<selectKey keyProperty="no" resultType="int" order="BEFROE">
+  		select Roles_KEY.next_val from dual
+  	</selectKey>
+  	insert into Roles(RNO,RNAME) values(#{no},#{name})
+  </insert>
+  -->
+  <update id="update" flushCache="true">
+  	 update Roles set RNAME=#{name} where RNO=#{rno}	
+  </update>
+  
+  <delete id="delete" flushCache="true">
+      delete from Roles where RNO=#{rno}
+  </delete>
+  
+  <select id="selectListByAll" resultMap="RoleResultMap">
+   	  select * from Roles
+  </select>
+  
+  <select id="selectByNo" resultMap="RoleResultMap">
+       select * from Roles where RNO=#{rno}
+  </select>
+  
+  <select id="selectListByUser" resultMap="RoleResultMap">
+  		select * from Roles where RNO in (select RNO from userrole where USERID=#{id})
+  </select>
+  
+  <select id="selectListByModule" resultMap="RoleResultMap">
+  		select * from Roles where RNO in (select RNO from rolemodule where MNO=#{mno})
+  </select>
+  
+    <!-- 取得职位的个数，使用IFNULL函数判断count函数结果是否为null, 为null返回0 -->
+  <select id="selectCountByAll" resultType="int">
+   select IFNULL(count(RNO), 0)  from Roles
+  </select>
+  
+  <insert id="addUser">
+  		insert into userrole values(#{id},#{rno})
+  </insert>
+  
+  <insert id="addUsers">
+  		insert into userrole values
+  		<foreach item="id" collection="idList" separator="," >
+			(#{id},#{rno})
+		</foreach>
+  </insert>
+  
+  <select id="selectListByAllWithUsersByNestedSelect" resultMap="RoleResultMapWithUsersByNestedSelect">
+  		select * from Roles
+  </select>
+  
+  <select id="selectListByAllWithUsersByNestedResultMap" resultMap="RoleResultMapWithUsersByNestedResultMap">
+  		select a.*,c.* from Roles a left outer join userrole b on a.RNO=b.RNO left outer join userinfo c on b.USERID=c.USERID
+  </select>
+  
+  <select id="selectListByAllWithModulesByNestedSelect" resultMap="RoleResultMapWithUsersByNestedSelect">
+  		select * from Roles
+  </select>
+  
+  <select id="selectListByAllWithModulesByNestedResultMap" resultMap="RoleResultMapWithUsersByNestedResultMap">
+  		select a.*,c.* from Roles a left outer join rolemodule b on a.RNO=b.RNO left outer join systemmodule c on b.MNO=c.MNO
+  </select>
+  
+</mapper>

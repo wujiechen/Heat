@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neusoft.busmis.security.dao.IUserDao">
+	<cache/>
+	<resultMap id="UserResultMap" type="User">
+		<id property="id" column="UserId"/>
+		<result property="password" column="UserPassword"/>
+		<result property="name" column="UserName"/>
+		<result property="age" column="Age"/>
+		<result property="joinDate" column="JoinDate"/>
+		<result property="status" column="Status"/>
+ 	</resultMap>
+ 	 
+ 	<!-- 内嵌式select -->
+ 	<resultMap id="UserResultMapWithRolesByNestedSelect" type="User" extends="UserResultMap">
+ 		<collection property="roles" column="USERID" select="com.neusoft.busmis.security.dao.IRoleDao.selectListByUser"/>
+ 	</resultMap>
+ 	
+ 	<!-- 内嵌式resultmap -->
+ 	<resultMap id="UserResultMapWithRolesByNestedResultMap" type="User" extends="UserResultMap">
+ 		<collection property="roles" resultMap="com.neusoft.busmis.security.dao.IRoleDao.RoleResultMap"/>
+ 	</resultMap>
+ 	
+ 
+	
+	<insert id="create" flushCache="true">
+		insert into userinfo values (#{id},#{password},#{name},#{age},#{joinDate},'N')
+	</insert>
+	
+	<insert id="createWithPhoto" flushCache="true">
+		insert into userinfo values (#{id},#{password},#{name},#{age},#{joinDate},'N',#{photo},#{photoFileName},#{photoContentType})
+		
+	</insert>
+	
+	<update id="update" flushCache="true">
+		update userinfo set UserPassword=#{password},UserName=#{name},age=#{age},JoinDate=#{joinDate} where USERID=#{id}
+		
+	</update>
+	<delete id="delete" flushCache="true">
+		delete from userinfo where UserId=#{id}
+	</delete>
+	<select id="selectListByAll" resultMap="UserResultMap">
+		select UserId,UserPassword,UserName,Age,JoinDate,Status,photoname,photoContentType from userinfo
+	</select>
+	<select id="selectListByAllWithPage" resultMap="UserResultMap">
+  	 	select UserId,UserPassword,UserName,Age,JoinDate,Status,photoname,photoContentType from userinfo limit #{start},#{rows}
+  
+  	</select>
+	<select id="selectById" resultMap="UserResultMap">
+		select * from userinfo where UserId=#{id}
+	</select>
+	
+	<insert id="addRole">
+		insert into userrole values(#{id},#{roleNo})
+	</insert>
+	
+	<insert id="addRoles">
+		insert into userrole values
+		<foreach item="roleNo" collection="roleNoList" separator="," >
+			(#{id},#{roleNo})
+		</foreach>
+	</insert>
+	
+	
+	
+	<select id="selectListByRole" resultMap="UserResultMap">
+		select UserId,UserPassword,UserName,Age,JoinDate,Status,photoname,photoContentType from userinfo where USRID in (select USERID from userrole where RNO=#{rno})
+	</select>
+	
+	<select id="selectListByAllWithRolesByNestedSelect" resultMap="UserResultMapWithRolesByNestedSelect">
+		select UserId,UserPassword,UserName,Age,JoinDate,Status,photoname,photoContentType from userinfo
+	</select>
+	
+	<select id="selectListByAllWithRolesByNestedResultMap" resultMap="UserResultMapWithRolesByNestedResultMap">
+		select a.*,c.* from userinfo a left outer join userrole b on a.USERID=b.USERID left outer join Roles c on b.RNO=c.RNO
+	</select>
+	
+	<!-- 取得指定用户的模块列表 -->
+	<select id="selectModuleListByUser" resultMap="com.neusoft.busmis.security.dao.IModuleDao.ModuleResultMapWithFunctionsByNestedResultMap" >
+		 select a.*,b.* from systemmodule a inner join SYSTEMFUNCTION b on a.MNO=b.MNO
+	 where a.MNO in (select MNO from RoleModule where RNO in (select RNO from UserRole where USERID=#{userid}))
+	
+	</select>
+</mapper>

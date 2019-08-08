@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neusoft.busmis.security.dao.IFunctionDao">
+	<cache/>
+	<resultMap id="FunctionResultMap" type="Function">
+		<id property="fno" column="FUNNO"/>
+		<result property="fname" column="FUNNAME"/>
+		<result property="furl" column="FUNURL"/>
+	</resultMap>
+	
+	<!-- 内嵌式select模式 -->
+	<resultMap id="FunctionResultMapWithRelationWithSelect" type="Function" extends="FunctionResultMap">
+		<association property="module" column="MNO" select="com.neusoft.busmis.security.dao.IModuleDao.selectListByFunction"/>
+	</resultMap>
+	
+	<!-- 内嵌式ResultMap模式 -->
+	<resultMap id="FunctionResultMapWithRelationWithNestedResultMap" type="function" extends="FunctionResultMap">
+		<association property="module" resultMap="com.neusoft.busmis.security.dao.IModuleDao.ModuleResultMap"/>
+	</resultMap>
+	
+	
+	<insert id="create" keyProperty="fno" keyColumn="FUNNO" useGeneratedKeys="true" flushCache="true">
+		insert into systemfunction(MNO,FUNNAME,FUNURL) values (#{module.mno},#{fname},#{furl})
+	</insert>
+	<update id="update" flushCache="true">
+		update systemfunction set MNO=#{module.mno},FUNNAME=#{fname},FUNURL=#{furl} where FUNNO=#{fno}		
+	</update>
+	<delete id="delete" flushCache="true">
+		delete from systemfunction where FUNNO=#{fno}
+	</delete>
+	<select id="selectListByAll" resultMap="FunctionResultMap">
+		select * from systemfunction
+	</select>
+	
+	<!-- 根据模块编号获取模块的功能列表 -->
+	<select id="selectListByModule" resultMap="FunctionResultMap">
+  	 	select * from systemfunction where MNO=#{mno}
+  	</select>
+	<select id="selectByNo" resultMap="FunctionResultMapWithRelationWithSelect">
+		select * from systemfunction where FUNNO=#{fno}
+	</select>
+  	<select id="selectCountByAll" resultType="Integer">
+  		select count(*) from systemfunction
+  	</select>
+  	<select id="selectCountByModule" resultType="Integer">
+  		select count(FUNNO) from systemfunction where MNO=#{mno}
+  	</select>
+   	
+   	<!-- 使用内嵌式select关联查询 -->
+  	<select id="selectListByAllWithNestedSelect" resultMap="FunctionResultMapWithRelationWithSelect">
+  		select * from systemfunction
+  	</select>
+  	
+  	<!-- 使用内嵌式RequestMap模式关联查询 -->
+  	<select id="selectListByAllWithNestedResultMap" resultMap="FunctionResultMapWithRelationWithNestedResultMap">
+  		select a.*,b.* from systemfunction a inner join systemmodule b on a.MNO=b.MNO
+  	</select>
+  	
+</mapper>
